@@ -3,18 +3,39 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
-class TrueCallerOverlay extends StatefulWidget {
-  const TrueCallerOverlay({Key? key}) : super(key: key);
+class CallerOverlay extends StatefulWidget {
+  const CallerOverlay({Key? key}) : super(key: key);
 
   @override
-  State<TrueCallerOverlay> createState() => _TrueCallerOverlayState();
+  State<CallerOverlay> createState() => _CallerOverlayState();
 }
 
-class _TrueCallerOverlayState extends State<TrueCallerOverlay> {
+class _CallerOverlayState extends State<CallerOverlay> {
+  int? _receivedTickValue;
+  String _lastUpdated = '';
 
   @override
   void initState() {
     super.initState();
+    FlutterOverlayWindow.overlayListener.listen((event) {
+      log('Overlay data: $event');
+      if (event is Map) {
+        setState(() {
+          _receivedTickValue = event['tickValue'];
+          _lastUpdated = event['timestamp'] ?? '';
+        });
+      }
+    });
+  }
+
+  String _formatTime() {
+    if (_lastUpdated.isEmpty) return 'Bilinmiyor';
+    try {
+      final time = DateTime.parse(_lastUpdated);
+      return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return 'Şimdi';
+    }
   }
 
   @override
@@ -83,10 +104,12 @@ class _TrueCallerOverlayState extends State<TrueCallerOverlay> {
                   ),
                   const SizedBox(height: 8),
                   
-                  // Distance text
-                  const Text(
-                    "3 dk. uzaklıkta",
-                    style: TextStyle(
+                  // Distance text - shows received tick value
+                  Text(
+                    _receivedTickValue != null 
+                        ? "$_receivedTickValue saniye geçti"
+                        : "3 dk. uzaklıkta",
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
@@ -97,19 +120,21 @@ class _TrueCallerOverlayState extends State<TrueCallerOverlay> {
                   // Rating and distance info
                   Row(
                     children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 16),
+                      const Icon(Icons.timer, color: Colors.blue, size: 16),
                       const SizedBox(width: 4),
-                      const Text(
-                        "4,90",
-                        style: TextStyle(
+                      Text(
+                        _receivedTickValue != null ? "Live Timer" : "4,90",
+                        style: const TextStyle(
                           fontSize: 14,
                           color: Colors.black54,
                         ),
                       ),
                       const SizedBox(width: 16),
-                      const Text(
-                        "1,1 km uzaklıkta",
-                        style: TextStyle(
+                      Text(
+                        _receivedTickValue != null 
+                            ? "Data alındı: ${_formatTime()}"
+                            : "1,1 km uzaklıkta",
+                        style: const TextStyle(
                           fontSize: 14,
                           color: Colors.black54,
                         ),
@@ -161,9 +186,9 @@ class _TrueCallerOverlayState extends State<TrueCallerOverlay> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text(
-                        "Eşleşme",
-                        style: TextStyle(
+                      child: Text(
+                        _receivedTickValue != null ? "Timer Aktif: $_receivedTickValue" : "Eşleşme",
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),
